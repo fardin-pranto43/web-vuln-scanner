@@ -80,73 +80,6 @@ Teams — Security awareness training
 
 Interviews — Demonstrate practical security knowledge
 
-💻 Technical Details
-Aspect	Details
-Tech Stack	HTML5, CSS3, JavaScript ES6+
-File Size	~15 KB (single file)
-Dependencies	Zero (pure browser)
-Deployment	GitHub Pages
-Performance	Instant scanning (no server latency)
-Privacy	100% local — no external requests
-🔧 Vulnerability Patterns Detected
-CRITICAL (40 pts each)
-
-Unescaped innerHTML (XSS)
-
-eval() function usage
-
-SQL Injection (string concatenation)
-
-Hardcoded credentials
-
-HTTP instead of HTTPS
-
-HIGH (25 pts each)
-
-Missing CSRF tokens
-
-No SameSite cookies
-
-Missing security headers
-
-Weak password requirements
-
-Logging sensitive data
-
-MEDIUM/LOW (15/5 pts)
-
-Missing input validation
-
-Exposed stack traces
-
-Debug mode enabled
-
-CORS allowing all origins
-
-🎯 Use Cases
-For Job Interviews:
-
-Demonstrates practical understanding of real vulnerabilities
-
-Shows you can explain complex security concepts clearly
-
-Proves ability to build functional tools
-
-For Master's Applications:
-
-Shows initiative in learning cybersecurity
-
-Demonstrates self-directed learning
-
-Portfolio piece that differentiates you
-
-For Security Teams:
-
-Quick security assessment tool
-
-Developer training resource
-
-Code review assistant
 
 📚 OWASP Reference
 Vulnerabilities covered align with OWASP Top 10 and CWE Top 25:
@@ -174,11 +107,10 @@ CWE-287: Improper Authentication
 
  Vulnerability database integration
 
-📄 License
-MIT License — Free for educational and personal use
 
 👨‍💻 Author
 Fardin Pranto
-Cybersecurity Master's Applicant | Bangladesh
+Cybersecurity Master's Applicant |
+Bangladesh
 Focus: Web Security, Vulnerability Assessment, Secure Development
 
