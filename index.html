@@ -13,7 +13,7 @@
             padding: 20px;
         }
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             background: white;
             border-radius: 15px;
@@ -28,12 +28,12 @@
         }
         .header h1 { font-size: 32px; margin-bottom: 10px; }
         .header p { font-size: 14px; opacity: 0.9; }
-        .content {
+        .main-content {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
             padding: 30px;
-            min-height: 600px;
+            min-height: 700px;
         }
         .section { display: flex; flex-direction: column; }
         .section h2 {
@@ -72,6 +72,14 @@
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
+        button.clear-btn {
+            background: #6c757d;
+            margin-left: 10px;
+        }
+        button.clear-btn:hover {
+            background: #5a6268;
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        }
         .results {
             flex: 1;
             overflow-y: auto;
@@ -106,6 +114,27 @@
         .vuln-desc {
             font-size: 12px;
             color: #666;
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        .vuln-example {
+            background: #f5f5f5;
+            padding: 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            margin: 8px 0;
+            max-height: 100px;
+            overflow-y: auto;
+            border-left: 2px solid #667eea;
+        }
+        .example-bad {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .example-good {
+            color: #28a745;
+            font-weight: bold;
         }
         .stats-box {
             display: grid;
@@ -147,8 +176,17 @@
         .risk-high { background: #ffe0b2; color: #e65100; }
         .risk-medium { background: #bbdefb; color: #1565c0; }
         .risk-low { background: #c8e6c9; color: #2e7d32; }
+        .info-banner {
+            background: #e7f3ff;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #1565c0;
+        }
         @media (max-width: 900px) {
-            .content { grid-template-columns: 1fr; }
+            .main-content { grid-template-columns: 1fr; min-height: auto; }
             .stats-box { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
@@ -157,26 +195,47 @@
     <div class="container">
         <div class="header">
             <h1>🔍 Web Vulnerability Scanner</h1>
-            <p>Detect XSS, CSRF, insecure headers, and security misconfigurations in your code</p>
+            <p>Detect XSS, CSRF, SQL Injection, insecure headers, and more. Paste code to scan instantly.</p>
         </div>
 
-        <div class="content">
+        <div class="main-content">
             <!-- Left: Input -->
             <div class="section">
-                <h2>Paste Code to Analyze</h2>
-                <textarea id="codeInput" placeholder="Paste HTML, CSS, or JavaScript code here...
-                
-Example:
-<input onclick=\"eval(userInput)\">
-<form action=\"/submit\">
+                <h2>📝 Paste Code to Analyze</h2>
+                <div class="info-banner">
+                    💡 <strong>How to use:</strong> Paste any HTML, CSS, or JavaScript code you want to check. The scanner will detect vulnerabilities and explain fixes.
+                </div>
+                <textarea id="codeInput" placeholder="Paste your code here...
 
-The scanner will detect vulnerabilities instantly."></textarea>
-                <button onclick="scanCode()">🔍 Scan for Vulnerabilities</button>
+EXAMPLES TO TRY:
+
+1) XSS Vulnerability:
+let userComment = getUserInput();
+document.getElementById('output').innerHTML = userComment;
+
+2) SQL Injection:
+let userId = getUserInput();
+let query = 'SELECT * FROM users WHERE id = ' + userId;
+
+3) Missing CSRF Token:
+<form method='POST' action='/transfer'>
+  <input name='amount' type='text'>
+</form>
+
+4) Hardcoded Password:
+const API_KEY = 'sk-1234567890abcdef';
+
+5) HTTP instead of HTTPS:
+fetch('http://api.example.com/data')"></textarea>
+                <div style="display: flex;">
+                    <button onclick="scanCode()">🔍 Scan for Vulnerabilities</button>
+                    <button class="clear-btn" onclick="clearCode()">Clear</button>
+                </div>
             </div>
 
             <!-- Right: Results -->
             <div class="section">
-                <h2>Security Report</h2>
+                <h2>📊 Security Report</h2>
                 <div class="stats-box">
                     <div class="stat">
                         <div class="stat-value" id="criticalCount">0</div>
@@ -203,141 +262,168 @@ The scanner will detect vulnerabilities instantly."></textarea>
     </div>
 
     <script>
-        // Vulnerability detection patterns
         const vulnerabilities = [
-            // XSS Vulnerabilities
             {
                 name: 'Unescaped innerHTML',
                 pattern: /\.innerHTML\s*=\s*(?!['"`])[^;]+\$/i,
                 severity: 'critical',
-                fix: 'Use textContent instead: element.textContent = data;',
-                description: 'innerHTML can execute scripts. Use textContent for user input.'
+                description: 'innerHTML can execute scripts embedded in user input. This allows XSS attacks where attackers inject malicious code.',
+                badExample: "document.getElementById('output').innerHTML = userInput;",
+                goodExample: "document.getElementById('output').textContent = userInput;",
+                fix: 'Use textContent instead of innerHTML, or sanitize input before using innerHTML'
             },
             {
-                name: 'eval() function',
+                name: 'eval() function usage',
                 pattern: /\beval\s*\(/i,
                 severity: 'critical',
-                fix: 'Replace eval() with Function() constructor or JSON.parse()',
-                description: 'eval() executes arbitrary code. Never use with user input.'
+                description: 'eval() executes JavaScript code from a string. If user input is passed to eval(), attackers can run arbitrary code on your site.',
+                badExample: "let result = eval(userCode);",
+                goodExample: "let result = JSON.parse(userCode);  // for JSON only",
+                fix: 'Never use eval(). Use JSON.parse() for JSON data, or Function() constructor carefully'
             },
             {
-                name: 'onclick with unescaped content',
+                name: 'Dynamic onclick handlers',
                 pattern: /onclick\s*=\s*['"]\s*(?!.*\/)[^'"]*\$\{[^}]*\}[^'"]*['"]/i,
                 severity: 'high',
-                fix: 'Use addEventListener() and sanitize event handlers',
-                description: 'Dynamic event handlers can be exploited for XSS attacks.'
+                description: 'Dynamically setting onclick with unsanitized variables allows attackers to execute arbitrary JavaScript.',
+                badExample: "<button onclick=\"executeAction(${userAction})\"></button>",
+                goodExample: "<button id='actionBtn'></button>\nactionBtn.onclick = safelyExecuteAction;",
+                fix: 'Use addEventListener() instead and validate/sanitize event handlers'
             },
             {
                 name: 'Missing input validation',
                 pattern: /<input[^>]*>/i,
                 severity: 'medium',
-                fix: 'Add validation: type="text", pattern="...", maxlength="..."',
-                description: 'Always validate and sanitize user input on server side.'
+                description: 'Input fields without validation allow attackers to submit malicious data (XSS, SQL injection, etc.).',
+                badExample: "<input name='username' type='text'>",
+                goodExample: "<input name='username' type='text' pattern='[a-zA-Z0-9_]{3,20}' required>",
+                fix: 'Add HTML5 validation attributes: type, pattern, maxlength, required; also validate server-side'
             },
-            // CSRF Vulnerabilities
             {
-                name: 'Missing CSRF token',
+                name: 'Missing CSRF token in forms',
                 pattern: /<form[^>]*method\s*=\s*['"]post['"]/i,
                 severity: 'high',
-                fix: 'Add: <input type="hidden" name="csrf_token" value="...">',
-                description: 'POST forms need CSRF tokens to prevent unauthorized actions.'
+                description: 'POST forms without CSRF tokens allow attackers to trick users into performing unwanted actions on their behalf.',
+                badExample: "<form method='POST' action='/transfer'>\n  <input name='amount'>\n</form>",
+                goodExample: "<form method='POST'>\n  <input type='hidden' name='csrf_token' value='...generated_token...'>\n  <input name='amount'>\n</form>",
+                fix: 'Add CSRF token: <input type="hidden" name="csrf_token" value="..."> and validate on server'
             },
             {
                 name: 'No SameSite cookie attribute',
                 pattern: /Set-Cookie(?!.*SameSite)/i,
                 severity: 'high',
-                fix: 'Add SameSite=Strict or SameSite=Lax to Set-Cookie header',
-                description: 'SameSite prevents CSRF attacks by restricting cookie sending.'
+                description: 'Cookies without SameSite attribute can be sent in cross-site requests, enabling CSRF attacks.',
+                badExample: "Set-Cookie: sessionid=abc123; Path=/",
+                goodExample: "Set-Cookie: sessionid=abc123; Path=/; SameSite=Strict",
+                fix: 'Add SameSite=Strict (or Lax) to all Set-Cookie headers'
             },
-            // Security Headers
             {
                 name: 'Missing Content-Security-Policy',
                 pattern: /^(?!.*Content-Security-Policy)/m,
                 severity: 'medium',
-                fix: 'Add header: Content-Security-Policy: default-src \'self\'',
-                description: 'CSP prevents XSS by restricting where scripts can load from.'
+                description: 'CSP header restricts where scripts can load from, preventing XSS attacks even if injected.',
+                badExample: "// No CSP header sent",
+                goodExample: "Content-Security-Policy: default-src 'self'; script-src 'self'",
+                fix: 'Add CSP header: Content-Security-Policy: default-src \'self\''
             },
             {
-                name: 'Missing X-Frame-Options',
+                name: 'Missing X-Frame-Options header',
                 pattern: /^(?!.*X-Frame-Options)/m,
                 severity: 'medium',
-                fix: 'Add header: X-Frame-Options: DENY or SAMEORIGIN',
-                description: 'Prevents clickjacking attacks by controlling iframe embedding.'
+                description: 'Without X-Frame-Options, attackers can embed your page in a hidden iframe to trick users (clickjacking).',
+                badExample: "// No X-Frame-Options header",
+                goodExample: "X-Frame-Options: DENY",
+                fix: 'Add header: X-Frame-Options: DENY or SAMEORIGIN'
             },
             {
                 name: 'Missing X-Content-Type-Options',
                 pattern: /^(?!.*X-Content-Type-Options)/m,
                 severity: 'low',
-                fix: 'Add header: X-Content-Type-Options: nosniff',
-                description: 'Prevents MIME-sniffing attacks in older browsers.'
+                description: 'MIME-sniffing can cause browsers to interpret files incorrectly, leading to security issues.',
+                badExample: "// Missing header",
+                goodExample: "X-Content-Type-Options: nosniff",
+                fix: 'Add header: X-Content-Type-Options: nosniff'
             },
-            // SQL Injection
             {
-                name: 'String concatenation in SQL',
+                name: 'SQL Injection via string concatenation',
                 pattern: /query\s*=\s*["'`].*\$\{[^}]*\}.*["'`]/i,
                 severity: 'critical',
-                fix: 'Use parameterized queries: query(sql, [param1, param2])',
-                description: 'SQL injection through string concatenation. Use prepared statements.'
+                description: 'Building SQL queries by concatenating user input allows SQL injection. Attacker can modify query logic and access/modify database.',
+                badExample: "let query = `SELECT * FROM users WHERE id = ${userId}`;",
+                goodExample: "let query = 'SELECT * FROM users WHERE id = ?';\ndb.execute(query, [userId]);",
+                fix: 'Use parameterized queries with placeholders (?) instead of string concatenation'
             },
             {
-                name: 'Unescaped SQL variables',
+                name: 'Direct SQL variable insertion',
                 pattern: /WHERE\s+[a-z_]+\s*=\s*['"]\s*\+\s*[a-z_]+/i,
                 severity: 'critical',
-                fix: 'Use parameterized queries with ? placeholders',
-                description: 'Direct variable insertion into SQL is extremely dangerous.'
+                description: 'Directly concatenating variables into SQL queries is extremely dangerous and allows database attacks.',
+                badExample: "let sql = \"SELECT * FROM users WHERE name = '\" + userName + \"'\";",
+                goodExample: "let sql = \"SELECT * FROM users WHERE name = ?\";\ndb.execute(sql, [userName]);",
+                fix: 'Always use prepared statements with parameterized queries'
             },
-            // Authentication Issues
             {
                 name: 'Hardcoded credentials',
-                pattern: /(password|api_key|secret)\s*[:=]\s*['"][^'"]{5,}['"]|(['"])(?:admin|password|123456)(['"])/i,
+                pattern: /(password|api_key|secret|token)\s*[:=]\s*['"][^'"]{5,}['"]|(['"])(?:admin|password|123456)(['"])/i,
                 severity: 'critical',
-                fix: 'Move credentials to environment variables (.env file)',
-                description: 'Never hardcode secrets in source code.'
+                description: 'Hardcoded secrets in source code are exposed in repositories. Anyone with code access can impersonate your app.',
+                badExample: "const API_KEY = 'sk-1234567890abcdef';",
+                goodExample: "const API_KEY = process.env.API_KEY;",
+                fix: 'Move all secrets to environment variables (.env file) and add to .gitignore'
             },
             {
-                name: 'Missing password complexity check',
+                name: 'Weak password requirements',
                 pattern: /password.*length\s*[<]\s*[0-9]/i,
                 severity: 'high',
-                fix: 'Enforce: min 8 chars, uppercase, lowercase, numbers, symbols',
-                description: 'Weak password requirements lead to account compromise.'
+                description: 'Short passwords are easy to crack. Brute-force attacks can compromise user accounts.',
+                badExample: "if (password.length < 6) return error;",
+                goodExample: "if (password.length < 12) return error;  // 12+ chars\nif (!/[A-Z]/.test(password)) return error;  // Uppercase",
+                fix: 'Enforce: minimum 12 characters, uppercase, lowercase, numbers, special characters'
             },
-            // Data Exposure
             {
                 name: 'Logging sensitive data',
                 pattern: /(console\.log|print|log)\s*\(\s*.*?(password|token|key|secret|api)[^)]*\)/i,
                 severity: 'high',
-                fix: 'Remove sensitive data from logs. Log only necessary info.',
-                description: 'Logs can be accessed by attackers. Never log passwords/tokens.'
+                description: 'Passwords and tokens in logs are exposed. Logs are stored and can be accessed by attackers or malicious employees.',
+                badExample: "console.log('Login attempt:', {username, password});",
+                goodExample: "console.log('Login attempt:', {username});  // Don't log password",
+                fix: 'Remove sensitive data from logs. Log only non-sensitive information'
             },
             {
                 name: 'Exposing stack traces',
                 pattern: /catch\s*\(\s*\w+\s*\)\s*\{\s*(console\.log|return|alert|document\.write)\s*\(\s*\w+\)/i,
                 severity: 'medium',
-                fix: 'Send generic error to client: "An error occurred". Log full error server-side.',
-                description: 'Stack traces expose internal structure and paths to attackers.'
+                description: 'Stack traces expose internal code structure, file paths, and database names to attackers.',
+                badExample: "catch (error) { console.log(error); }  // Shows full error",
+                goodExample: "catch (error) { console.log('An error occurred'); logServerSide(error); }",
+                fix: 'Send generic error to client, log detailed error server-side only'
             },
-            // Insecure Communication
             {
                 name: 'HTTP instead of HTTPS',
                 pattern: /http:\/\/(?!localhost|127\.0\.0\.1)/i,
                 severity: 'critical',
-                fix: 'Use HTTPS (https://) for all external requests',
-                description: 'HTTP traffic can be intercepted. Always use HTTPS in production.'
+                description: 'HTTP traffic is unencrypted. Attackers on the same network can intercept passwords, tokens, and user data.',
+                badExample: "fetch('http://api.example.com/data')",
+                goodExample: "fetch('https://api.example.com/data')",
+                fix: 'Use HTTPS for all external requests. Enable SSL/TLS certificate'
             },
-            // Misconfiguration
             {
-                name: 'Debugging enabled in production',
+                name: 'Debug mode enabled',
                 pattern: /debug\s*[:=]\s*true|DEBUG\s*=\s*True/i,
                 severity: 'high',
-                fix: 'Set debug=false in production environment',
-                description: 'Debug mode exposes sensitive information to attackers.'
+                description: 'Debug mode exposes sensitive information like file paths, environment variables, and stack traces to attackers.',
+                badExample: "app.set('debug', true);  // In production",
+                goodExample: "app.set('debug', process.env.NODE_ENV === 'development');",
+                fix: 'Set debug=false in production. Use environment variables to control debug mode'
             },
             {
                 name: 'CORS allowing all origins',
                 pattern: /Access-Control-Allow-Origin\s*[:=]\s*['"]\*['"]|CORS.*\*|\*.*CORS/i,
                 severity: 'high',
-                fix: 'Specify allowed origins: "https://yourdomain.com"',
-                description: 'Allowing all origins (CORS *) enables CSRF and data theft.'
+                description: 'Allowing all origins (CORS *) enables attackers from any website to access your APIs and data.',
+                badExample: "Access-Control-Allow-Origin: *",
+                goodExample: "Access-Control-Allow-Origin: https://yourdomain.com",
+                fix: 'Specify allowed origins explicitly: Access-Control-Allow-Origin: https://yourdomain.com'
             }
         ];
 
@@ -352,7 +438,6 @@ The scanner will detect vulnerabilities instantly."></textarea>
             const found = [];
             let totalScore = 0;
 
-            // Run all vulnerability checks
             vulnerabilities.forEach(vuln => {
                 if (vuln.pattern.test(code)) {
                     found.push(vuln);
@@ -363,14 +448,12 @@ The scanner will detect vulnerabilities instantly."></textarea>
                 }
             });
 
-            // Display results
             displayResults(found, Math.min(totalScore, 100));
         }
 
         function displayResults(vulns, riskScore) {
             const container = document.getElementById('resultsContainer');
             
-            // Count by severity
             const counts = {
                 critical: vulns.filter(v => v.severity === 'critical').length,
                 high: vulns.filter(v => v.severity === 'high').length,
@@ -384,7 +467,7 @@ The scanner will detect vulnerabilities instantly."></textarea>
             document.getElementById('lowCount').textContent = counts.low;
 
             if (vulns.length === 0) {
-                container.innerHTML = '<div class="empty-state">✅ No vulnerabilities detected!</div>';
+                container.innerHTML = '<div class="empty-state">✅ No vulnerabilities detected! Your code looks secure.</div>';
                 return;
             }
 
@@ -394,8 +477,12 @@ The scanner will detect vulnerabilities instantly."></textarea>
                 html += `
                     <div class="vulnerability vuln-${vuln.severity}">
                         <div class="vuln-title">⚠️ ${vuln.name}</div>
-                        <div class="vuln-desc"><strong>Issue:</strong> ${vuln.description}</div>
-                        <div class="vuln-desc"><strong>Fix:</strong> ${vuln.fix}</div>
+                        <div class="vuln-desc"><strong>What is it?</strong> ${vuln.description}</div>
+                        <div class="vuln-desc"><strong>❌ Bad Example:</strong></div>
+                        <div class="vuln-example example-bad">${escapeHtml(vuln.badExample)}</div>
+                        <div class="vuln-desc"><strong>✅ Good Example:</strong></div>
+                        <div class="vuln-example example-good">${escapeHtml(vuln.goodExample)}</div>
+                        <div class="vuln-desc"><strong>🔧 How to Fix:</strong> ${vuln.fix}</div>
                     </div>
                 `;
             });
@@ -410,7 +497,21 @@ The scanner will detect vulnerabilities instantly."></textarea>
             return { text: 'LOW', class: 'low' };
         }
 
-        // Auto-scan on paste
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function clearCode() {
+            document.getElementById('codeInput').value = '';
+            document.getElementById('resultsContainer').innerHTML = '<div class="empty-state">👈 Paste code to scan for vulnerabilities</div>';
+            document.getElementById('criticalCount').textContent = '0';
+            document.getElementById('highCount').textContent = '0';
+            document.getElementById('mediumCount').textContent = '0';
+            document.getElementById('lowCount').textContent = '0';
+        }
+
         document.getElementById('codeInput').addEventListener('input', () => {
             const code = document.getElementById('codeInput').value;
             if (code.length > 50) {
