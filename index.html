@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 Web Vulnerability Scanner</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        .header h1 { font-size: 32px; margin-bottom: 10px; }
+        .header p { font-size: 14px; opacity: 0.9; }
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 30px;
+            min-height: 600px;
+        }
+        .section { display: flex; flex-direction: column; }
+        .section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        textarea {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            resize: none;
+            transition: border-color 0.3s;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .results {
+            flex: 1;
+            overflow-y: auto;
+        }
+        .vulnerability {
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+        .vuln-critical {
+            background: #ffebee;
+            border-left-color: #dc3545;
+        }
+        .vuln-high {
+            background: #fff3e0;
+            border-left-color: #ff9800;
+        }
+        .vuln-medium {
+            background: #e3f2fd;
+            border-left-color: #2196f3;
+        }
+        .vuln-low {
+            background: #e8f5e9;
+            border-left-color: #4caf50;
+        }
+        .vuln-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+        .vuln-desc {
+            font-size: 12px;
+            color: #666;
+        }
+        .stats-box {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .stat {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .empty-state {
+            color: #999;
+            text-align: center;
+            padding: 40px 20px;
+            font-size: 14px;
+        }
+        .risk-score {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+        .risk-critical { background: #ffcdd2; color: #c62828; }
+        .risk-high { background: #ffe0b2; color: #e65100; }
+        .risk-medium { background: #bbdefb; color: #1565c0; }
+        .risk-low { background: #c8e6c9; color: #2e7d32; }
+        @media (max-width: 900px) {
+            .content { grid-template-columns: 1fr; }
+            .stats-box { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Web Vulnerability Scanner</h1>
+            <p>Detect XSS, CSRF, insecure headers, and security misconfigurations in your code</p>
+        </div>
+
+        <div class="content">
+            <!-- Left: Input -->
+            <div class="section">
+                <h2>Paste Code to Analyze</h2>
+                <textarea id="codeInput" placeholder="Paste HTML, CSS, or JavaScript code here...
+                
+Example:
+<input onclick=\"eval(userInput)\">
+<form action=\"/submit\">
+
+The scanner will detect vulnerabilities instantly."></textarea>
+                <button onclick="scanCode()">🔍 Scan for Vulnerabilities</button>
+            </div>
+
+            <!-- Right: Results -->
+            <div class="section">
+                <h2>Security Report</h2>
+                <div class="stats-box">
+                    <div class="stat">
+                        <div class="stat-value" id="criticalCount">0</div>
+                        <div class="stat-label">Critical</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="highCount">0</div>
+                        <div class="stat-label">High</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="mediumCount">0</div>
+                        <div class="stat-label">Medium</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="lowCount">0</div>
+                        <div class="stat-label">Low</div>
+                    </div>
+                </div>
+                <div id="resultsContainer" class="results">
+                    <div class="empty-state">👈 Paste code to scan for vulnerabilities</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Vulnerability detection patterns
+        const vulnerabilities = [
+            // XSS Vulnerabilities
+            {
+                name: 'Unescaped innerHTML',
+                pattern: /\.innerHTML\s*=\s*(?!['"`])[^;]+\$/i,
+                severity: 'critical',
+                fix: 'Use textContent instead: element.textContent = data;',
+                description: 'innerHTML can execute scripts. Use textContent for user input.'
+            },
+            {
+                name: 'eval() function',
+                pattern: /\beval\s*\(/i,
+                severity: 'critical',
+                fix: 'Replace eval() with Function() constructor or JSON.parse()',
+                description: 'eval() executes arbitrary code. Never use with user input.'
+            },
+            {
+                name: 'onclick with unescaped content',
+                pattern: /onclick\s*=\s*['"]\s*(?!.*\/)[^'"]*\$\{[^}]*\}[^'"]*['"]/i,
+                severity: 'high',
+                fix: 'Use addEventListener() and sanitize event handlers',
+                description: 'Dynamic event handlers can be exploited for XSS attacks.'
+            },
+            {
+                name: 'Missing input validation',
+                pattern: /<input[^>]*>/i,
+                severity: 'medium',
+                fix: 'Add validation: type="text", pattern="...", maxlength="..."',
+                description: 'Always validate and sanitize user input on server side.'
+            },
+            // CSRF Vulnerabilities
+            {
+                name: 'Missing CSRF token',
+                pattern: /<form[^>]*method\s*=\s*['"]post['"]/i,
+                severity: 'high',
+                fix: 'Add: <input type="hidden" name="csrf_token" value="...">',
+                description: 'POST forms need CSRF tokens to prevent unauthorized actions.'
+            },
+            {
+                name: 'No SameSite cookie attribute',
+                pattern: /Set-Cookie(?!.*SameSite)/i,
+                severity: 'high',
+                fix: 'Add SameSite=Strict or SameSite=Lax to Set-Cookie header',
+                description: 'SameSite prevents CSRF attacks by restricting cookie sending.'
+            },
+            // Security Headers
+            {
+                name: 'Missing Content-Security-Policy',
+                pattern: /^(?!.*Content-Security-Policy)/m,
+                severity: 'medium',
+                fix: 'Add header: Content-Security-Policy: default-src \'self\'',
+                description: 'CSP prevents XSS by restricting where scripts can load from.'
+            },
+            {
+                name: 'Missing X-Frame-Options',
+                pattern: /^(?!.*X-Frame-Options)/m,
+                severity: 'medium',
+                fix: 'Add header: X-Frame-Options: DENY or SAMEORIGIN',
+                description: 'Prevents clickjacking attacks by controlling iframe embedding.'
+            },
+            {
+                name: 'Missing X-Content-Type-Options',
+                pattern: /^(?!.*X-Content-Type-Options)/m,
+                severity: 'low',
+                fix: 'Add header: X-Content-Type-Options: nosniff',
+                description: 'Prevents MIME-sniffing attacks in older browsers.'
+            },
+            // SQL Injection
+            {
+                name: 'String concatenation in SQL',
+                pattern: /query\s*=\s*["'`].*\$\{[^}]*\}.*["'`]/i,
+                severity: 'critical',
+                fix: 'Use parameterized queries: query(sql, [param1, param2])',
+                description: 'SQL injection through string concatenation. Use prepared statements.'
+            },
+            {
+                name: 'Unescaped SQL variables',
+                pattern: /WHERE\s+[a-z_]+\s*=\s*['"]\s*\+\s*[a-z_]+/i,
+                severity: 'critical',
+                fix: 'Use parameterized queries with ? placeholders',
+                description: 'Direct variable insertion into SQL is extremely dangerous.'
+            },
+            // Authentication Issues
+            {
+                name: 'Hardcoded credentials',
+                pattern: /(password|api_key|secret)\s*[:=]\s*['"][^'"]{5,}['"]|(['"])(?:admin|password|123456)(['"])/i,
+                severity: 'critical',
+                fix: 'Move credentials to environment variables (.env file)',
+                description: 'Never hardcode secrets in source code.'
+            },
+            {
+                name: 'Missing password complexity check',
+                pattern: /password.*length\s*[<]\s*[0-9]/i,
+                severity: 'high',
+                fix: 'Enforce: min 8 chars, uppercase, lowercase, numbers, symbols',
+                description: 'Weak password requirements lead to account compromise.'
+            },
+            // Data Exposure
+            {
+                name: 'Logging sensitive data',
+                pattern: /(console\.log|print|log)\s*\(\s*.*?(password|token|key|secret|api)[^)]*\)/i,
+                severity: 'high',
+                fix: 'Remove sensitive data from logs. Log only necessary info.',
+                description: 'Logs can be accessed by attackers. Never log passwords/tokens.'
+            },
+            {
+                name: 'Exposing stack traces',
+                pattern: /catch\s*\(\s*\w+\s*\)\s*\{\s*(console\.log|return|alert|document\.write)\s*\(\s*\w+\)/i,
+                severity: 'medium',
+                fix: 'Send generic error to client: "An error occurred". Log full error server-side.',
+                description: 'Stack traces expose internal structure and paths to attackers.'
+            },
+            // Insecure Communication
+            {
+                name: 'HTTP instead of HTTPS',
+                pattern: /http:\/\/(?!localhost|127\.0\.0\.1)/i,
+                severity: 'critical',
+                fix: 'Use HTTPS (https://) for all external requests',
+                description: 'HTTP traffic can be intercepted. Always use HTTPS in production.'
+            },
+            // Misconfiguration
+            {
+                name: 'Debugging enabled in production',
+                pattern: /debug\s*[:=]\s*true|DEBUG\s*=\s*True/i,
+                severity: 'high',
+                fix: 'Set debug=false in production environment',
+                description: 'Debug mode exposes sensitive information to attackers.'
+            },
+            {
+                name: 'CORS allowing all origins',
+                pattern: /Access-Control-Allow-Origin\s*[:=]\s*['"]\*['"]|CORS.*\*|\*.*CORS/i,
+                severity: 'high',
+                fix: 'Specify allowed origins: "https://yourdomain.com"',
+                description: 'Allowing all origins (CORS *) enables CSRF and data theft.'
+            }
+        ];
+
+        function scanCode() {
+            const code = document.getElementById('codeInput').value;
+            
+            if (!code.trim()) {
+                alert('Please paste some code to analyze');
+                return;
+            }
+
+            const found = [];
+            let totalScore = 0;
+
+            // Run all vulnerability checks
+            vulnerabilities.forEach(vuln => {
+                if (vuln.pattern.test(code)) {
+                    found.push(vuln);
+                    if (vuln.severity === 'critical') totalScore += 40;
+                    else if (vuln.severity === 'high') totalScore += 25;
+                    else if (vuln.severity === 'medium') totalScore += 15;
+                    else totalScore += 5;
+                }
+            });
+
+            // Display results
+            displayResults(found, Math.min(totalScore, 100));
+        }
+
+        function displayResults(vulns, riskScore) {
+            const container = document.getElementById('resultsContainer');
+            
+            // Count by severity
+            const counts = {
+                critical: vulns.filter(v => v.severity === 'critical').length,
+                high: vulns.filter(v => v.severity === 'high').length,
+                medium: vulns.filter(v => v.severity === 'medium').length,
+                low: vulns.filter(v => v.severity === 'low').length
+            };
+
+            document.getElementById('criticalCount').textContent = counts.critical;
+            document.getElementById('highCount').textContent = counts.high;
+            document.getElementById('mediumCount').textContent = counts.medium;
+            document.getElementById('lowCount').textContent = counts.low;
+
+            if (vulns.length === 0) {
+                container.innerHTML = '<div class="empty-state">✅ No vulnerabilities detected!</div>';
+                return;
+            }
+
+            let html = `<div class="risk-score risk-${getRiskLevel(riskScore).class}">Risk Score: ${riskScore}/100 - ${getRiskLevel(riskScore).text}</div>`;
+            
+            vulns.forEach(vuln => {
+                html += `
+                    <div class="vulnerability vuln-${vuln.severity}">
+                        <div class="vuln-title">⚠️ ${vuln.name}</div>
+                        <div class="vuln-desc"><strong>Issue:</strong> ${vuln.description}</div>
+                        <div class="vuln-desc"><strong>Fix:</strong> ${vuln.fix}</div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function getRiskLevel(score) {
+            if (score >= 80) return { text: 'CRITICAL', class: 'critical' };
+            if (score >= 60) return { text: 'HIGH', class: 'high' };
+            if (score >= 40) return { text: 'MEDIUM', class: 'medium' };
+            return { text: 'LOW', class: 'low' };
+        }
+
+        // Auto-scan on paste
+        document.getElementById('codeInput').addEventListener('input', () => {
+            const code = document.getElementById('codeInput').value;
+            if (code.length > 50) {
+                scanCode();
+            }
+        });
+    </script>
+</body>
+</html>
